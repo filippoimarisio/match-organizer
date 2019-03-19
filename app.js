@@ -2,10 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const graphqlHttp = require('express-graphql');
 const { buildSchema } = require('graphql');
+const mongoose = require('mongoose');
+
+const Match = require('./models/match');
 
 const app = express();
-
-const matches = [];
 
 app.use(bodyParser.json());
 
@@ -42,21 +43,48 @@ app.use('/graphql', graphqlHttp({
   `),
   rootValue: {
     matches: () => {
-      return matches;
+      return Match.find()
+      .then(matches => {
+        return matches.map(match => {
+          return { ...match._doc, _id: match.id };
+        })
+      })
+      .catch(err => {
+        throw err;
+      })
     },
     createMatch: (args) => {
-      const match = {
-        _id: Math.random().toString(),
+      const match = new Match({
         title: args.matchInput.title,
         description: args.matchInput.description,
         price: +args.matchInput.price,
-        date: args.matchInput.date
-      };
-      matches.push(match);
+        date: new Date (args.matchInput.date)
+      })
+      return match
+        .save()
+        .then(result => {
+          console.log(result);
+          return {...result._doc};
+        })
+        .catch(err => {
+          console.log(err);
+          throw err;
+      });
       return match;
     }
   },
   graphiql: true
 }));
+mongoose
+  .connect(
+    `mongodb+srv://${process.env.MONGO_USER}:${
+      process.env.MONGO_PASSWORD
+    }@cluster0-ahokq.mongodb.net/${process.env.MONGO_DB}?retryWrites=true`
+  )
+  .then(() => {
+    app.listen(3000);
+  })
+  .catch(err => {
+    console.log(err);
+  })
 
-app.listen(3000);

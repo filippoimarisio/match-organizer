@@ -1,0 +1,7 @@
+{
+  "env": {
+    "MONGO_USER": "filippo",
+    "MONGO_PASSWORD": "Gs4Sfi5Zsa2kFLZ",
+    "MONGO_DB": "matches-react-dev"
+  }
+}
