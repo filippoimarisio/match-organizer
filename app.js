@@ -12,6 +12,37 @@ const app = express();
 
 app.use(bodyParser.json());
 
+const matches = matchIds => {
+  return Match.find({ _id: {$in: matchIds}})
+  .then(matches => {
+    return matches.map(match => {
+      return {
+        ...match._doc,
+        _id: creator.id,
+        creator: user.bind(this, match.creator)
+      };
+    });
+  })
+  .catch(err => {
+    throw err;
+  });
+}
+
+const user = userId => {
+  return User.findById(userId)
+  .then(user => {
+    console.log('DA QUI',user._doc.createdMatches, 'A QUI')
+    return {
+      ...user._doc,
+      _id: user.id, 
+      createdMatches: matches.bind(this, user._doc.createdMatches)
+      };
+  })
+  .catch(err => {
+    throw err;
+  });
+};
+
 app.use('/graphql', graphqlHttp({
   schema: buildSchema(`
 
@@ -21,12 +52,14 @@ app.use('/graphql', graphqlHttp({
       description: String!
       price: Float!
       date: String!
+      creator: User!
     }
 
     type User {
       _id: ID!
       email: String!
       password: String
+      createdMatches: [Match!]
     }
 
     input MatchInput {
@@ -60,7 +93,11 @@ app.use('/graphql', graphqlHttp({
       return Match.find()
       .then(matches => {
         return matches.map(match => {
-          return { ...match._doc, _id: match.id };
+          return { 
+            ...match._doc, 
+            _id: match.id,
+            creator: user.bind(this, match._doc.creator)
+          };
         })
       })
       .catch(err => {
