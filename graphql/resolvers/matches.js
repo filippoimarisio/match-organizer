@@ -1,4 +1,6 @@
 const Match = require('../../models/match');
+const User = require('../../models/user');
+
 const { transformMatch } = require('./merge');
 
 module.exports = {
@@ -12,13 +14,16 @@ module.exports = {
       throw err;
     }
   },
-  createMatch: async args => {
+  createMatch: async (args, req) => {
+    if (!req.isAuth) {
+      throw new Error('You must be logged in to create a match');
+    }
     const match = new Match({
       title: args.matchInput.title,
       description: args.matchInput.description,
       price: +args.matchInput.price,
       date: new Date(args.matchInput.date),
-      creator: '5c91405d73a94b46cb9141c9'
+      creator: req.userId
     });
     let createdMatch;
     try {

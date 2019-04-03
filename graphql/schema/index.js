@@ -26,6 +26,12 @@ module.exports = buildSchema(`
     createdMatches: [Match!]
   }
 
+  type AuthData {
+    userId: ID!
+    token: String!
+    tokenExpiration: Int!
+  }
+
   input MatchInput {
     title: String!
     description: String!
@@ -41,6 +47,7 @@ module.exports = buildSchema(`
   type RootQuery {
     matches: [Match!]!
     bookings: [Booking!]!
+    login(email: String!, password: String!): AuthData!
   }
 
   type RootMutation {
