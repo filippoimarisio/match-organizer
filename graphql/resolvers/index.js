@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 
 const Match = require('../../models/match');
 const User = require('../../models/user');
+const Booking = require('../../models/booking');
 
 const matches = async matchIds => {
   try {
@@ -19,6 +20,20 @@ const matches = async matchIds => {
     throw err;
   }
 };
+
+const singleMatch = async matchId => {
+  try {
+    const match = await Match.findById(matchId);
+    return {
+      ...match._doc,
+      _id: match.id,
+      creator: user.bind(this, match.creator)
+    }
+  }
+  catch (err) {
+    throw err
+  }
+}
 
 const user = async userId => {
   try {
@@ -47,6 +62,23 @@ module.exports = {
       });
     } catch (err) {
       throw err;
+    }
+  },
+  bookings: async () => {
+    try {
+      const bookings = await Booking.find();
+      return bookings.map(booking => {
+        return { 
+          ...booking._doc, 
+          _id: booking.id, 
+          user: user.bind(this, booking._doc.user),
+          match: singleMatch.bind(this, booking._doc.match),
+          createdAt: new Date(booking._doc.createdAt).toISOString(),
+          updatedAt: new Date(booking._doc.updatedAt).toISOString()
+        }
+      })
+    } catch (err) {
+      throw err
     }
   },
   createMatch: async args => {
@@ -98,6 +130,37 @@ module.exports = {
       return { ...result._doc, password: null, _id: result.id };
     } catch (err) {
       throw err;
+    }
+  },
+  bookMatch: async args => {
+    const fetchedMatch = await Match.findOne({_id: args.matchId});
+    const booking = new Booking({
+      user: '5c0fbd06c816781c518e4f3e',
+      match: fetchedMatch
+    });
+    const result = await booking.save();
+    return {
+      ...result._doc,
+      _id: result.id,
+      user: user.bind(this, booking._doc.match),
+      match: singleMatch.bind(this, booking._doc.user),
+      createdAt: new Date(booking._doc.createdAt).toISOString(),
+      updatedAt: new Date(booking._doc.updatedAt).toISOString()
+    };
+  },
+  cancelBooking: async args => {
+    try {
+      const booking = await Booking.findById({_id: args.bookingId}).populate('match');
+      console.log("The booking", booking)
+      const match = {
+        ...booking.match._doc,
+        _id: booking.match.id,
+        creator: user.bind(this, booking.match._doc.creator)
+      };
+      await Booking.deleteOne({_id: args.bookingId})
+      return match;
+    } catch (err) {
+      throw err
     }
   }
 };
