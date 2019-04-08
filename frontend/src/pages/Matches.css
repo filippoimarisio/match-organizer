@@ -1,0 +1,8 @@
+.matches-control {
+  text-align: center;
+  border: 1px solid rgb(89, 151, 27);
+  padding: 1rem;
+  margin: 2rem auto;
+  width: 30rem;
+  max-width: 80%;
+}
