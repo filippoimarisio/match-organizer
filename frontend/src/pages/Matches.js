@@ -3,12 +3,16 @@ import './Matches.css';
 import Modal from '../components/Modal/Modal';
 import Backdrop from '../components/Backdrop/Backdrop'
 import AuthContext from '../context/auth-context';
+import MatchList from '../components/Matches/MatchList/MatchList';
+import Spinner from '../components/Spinner/Spinner';
 
 
 class MatchesPage extends Component {
   state = {
     creating: false,
-    matches: []
+    matches: [],
+    isLoading: false,
+    selectedMatch: null
   };
 
   static contextType = AuthContext;
@@ -83,7 +87,21 @@ class MatchesPage extends Component {
         return res.json();
       })
       .then(resData => {
-        this.fetchMatches();
+        this.setState(prevState => {
+          const updatedMatches = [...prevState.matches];
+          console.log('resdata', resData)
+          updatedMatches.push({
+            _id: resData.data.createMatch._id,
+            title: resData.data.createMatch.title,
+            description: resData.data.createMatch.description,
+            date: resData.data.createMatch.date,
+            price: resData.data.createMatch.price,
+            creator: {
+              _id: this.context.userId
+            }
+          })
+          return {matches: updatedMatches};
+        });
       })
       .catch(err => {
         console.log(err);
@@ -91,10 +109,11 @@ class MatchesPage extends Component {
   };
 
   handleOnCancel = () => {
-    this.setState({ creating: false });
+    this.setState({ creating: false, selectedMatch: null });
   };
 
   fetchMatches() {
+    this.setState({isLoading: true});
     const requestBody = {
       query: `
           query {
@@ -128,25 +147,26 @@ class MatchesPage extends Component {
       })
       .then(resData => {
         const matches = resData.data.matches;
-        this.setState({ matches: matches });
+        this.setState({ matches: matches, isLoading: false });
       })
       .catch(err => {
         console.log(err);
+        this.setState({ isLoading: false });
       });
   }
 
+  handleShowDetail = matchId => {
+    this.setState(prevState => {
+      const selectedMatch = prevState.matches.find(m => m._id === matchId);
+      return {selectedMatch : selectedMatch};
+    })
+  }
+
   render() {
-    const matchesList = this.state.matches.map(match => {
-      return (
-        <li key={match._id} className="matches__list-item">
-          {match.title}
-        </li>
-      );
-    });
 
     return (
       <React.Fragment>
-        {this.state.creating && <Backdrop />}
+        {(this.state.creating || this.state.selectedMatch) && <Backdrop />}
         {this.state.creating && (
           <Modal
             title="Create match"
@@ -154,6 +174,7 @@ class MatchesPage extends Component {
             canConfirm
             onCancel={this.handleOnCancel}
             onConfirm={this.handleOnConfirm}
+            confirmText='Confirm'
           >
             <form>
               <div className="form-control">
@@ -166,7 +187,11 @@ class MatchesPage extends Component {
               </div>
               <div className="form-control">
                 <label htmlFor="date">Date</label>
-                <input type="datetime-local" id="date" ref={this.dateElRef} />
+                <input
+                  type="datetime-local"
+                  id="date"
+                  ref={this.dateElRef}
+                />
               </div>
               <div className="form-control">
                 <label htmlFor="description">Description</label>
@@ -179,6 +204,23 @@ class MatchesPage extends Component {
             </form>
           </Modal>
         )}
+        {this.state.selectedMatch && (
+          <Modal
+            title={this.state.selectedMatch.title}
+            canCancel
+            canConfirm
+            onCancel={this.handleOnCancel}
+            onConfirm={this.handleBookMatch}
+            confirmText='Book'
+          >
+            <h1>{this.state.selectedMatch.title}</h1>
+            <h2>
+              ${this.state.selectedMatch.price} -{" "}
+              {new Date(this.state.selectedMatch.date).toLocaleDateString()}
+            </h2>
+            <p>{this.state.selectedMatch.description}</p>
+          </Modal>
+        )}
         {this.context.token && (
           <div className="matches-control">
             <p className="">Create a new match!</p>
@@ -187,9 +229,15 @@ class MatchesPage extends Component {
             </button>
           </div>
         )}
-        <ul className="matches__list">
-          {matchesList}
-        </ul>
+        {this.state.isLoading ? (
+          <Spinner />
+        ) : (
+          <MatchList
+            matches={this.state.matches}
+            authUserId={this.context.userId}
+            onViewDetail={this.handleShowDetail}
+          />
+        )}
       </React.Fragment>
     );
   }

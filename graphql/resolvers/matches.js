@@ -18,6 +18,7 @@ module.exports = {
     if (!req.isAuth) {
       throw new Error('You must be logged in to create a match');
     }
+    console.log('richiesta', req)
     const match = new Match({
       title: args.matchInput.title,
       description: args.matchInput.description,
@@ -29,7 +30,7 @@ module.exports = {
     try {
       const result = await match.save();
       createdMatch = transformMatch(result);
-      const creator = await User.findById('5c91405d73a94b46cb9141c9');
+      const creator = await User.findById(req.userId);
 
       if (!creator) {
         throw new Error('User not found.');
