@@ -15,6 +15,8 @@ class MatchesPage extends Component {
     selectedMatch: null
   };
 
+  isActive = true;
+
   static contextType = AuthContext;
 
   constructor(props) {
@@ -89,7 +91,7 @@ class MatchesPage extends Component {
       .then(resData => {
         this.setState(prevState => {
           const updatedMatches = [...prevState.matches];
-          console.log('resdata', resData)
+          console.log("resdata", resData);
           updatedMatches.push({
             _id: resData.data.createMatch._id,
             title: resData.data.createMatch.title,
@@ -99,8 +101,8 @@ class MatchesPage extends Component {
             creator: {
               _id: this.context.userId
             }
-          })
-          return {matches: updatedMatches};
+          });
+          return { matches: updatedMatches };
         });
       })
       .catch(err => {
@@ -113,7 +115,7 @@ class MatchesPage extends Component {
   };
 
   fetchMatches() {
-    this.setState({isLoading: true});
+    this.setState({ isLoading: true });
     const requestBody = {
       query: `
           query {
@@ -147,23 +149,70 @@ class MatchesPage extends Component {
       })
       .then(resData => {
         const matches = resData.data.matches;
-        this.setState({ matches: matches, isLoading: false });
+        if(this.isActive) {
+          this.setState({ matches: matches, isLoading: false });
+        }
       })
       .catch(err => {
         console.log(err);
-        this.setState({ isLoading: false });
+        if(this.isActive) {
+          this.setState({ isLoading: false });
+        }
       });
   }
 
   handleShowDetail = matchId => {
     this.setState(prevState => {
       const selectedMatch = prevState.matches.find(m => m._id === matchId);
-      return {selectedMatch : selectedMatch};
+      return { selectedMatch: selectedMatch };
+    });
+  };
+
+  handleBookMatch = () => {
+    if(!this.context.token) {
+      this.setState({selectedMatch: null})
+      return;
+    }
+    const requestBody = {
+      query: `
+          mutation {
+            bookMatch(matchId: "${this.state.selectedMatch._id}") {
+              _id
+              createdAt
+              updatedAt
+            }
+          }
+        `
+    };
+
+    fetch("http://localhost:8000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + this.context.token
+      }
     })
+      .then(res => {
+        if (res.status !== 200 && res.status !== 201) {
+          throw new Error("Failed!");
+        }
+        return res.json();
+      })
+      .then(resData => {
+        console.log(resData);
+        this.setState({ selectedMatch: null })
+      })
+      .catch(err => {
+        console.log(err);
+      });
+  };
+
+  componentWillUnmount() {
+    this.isActive = false;
   }
 
   render() {
-
     return (
       <React.Fragment>
         {(this.state.creating || this.state.selectedMatch) && <Backdrop />}
@@ -174,7 +223,7 @@ class MatchesPage extends Component {
             canConfirm
             onCancel={this.handleOnCancel}
             onConfirm={this.handleOnConfirm}
-            confirmText='Confirm'
+            confirmText="Confirm"
           >
             <form>
               <div className="form-control">
@@ -211,7 +260,7 @@ class MatchesPage extends Component {
             canConfirm
             onCancel={this.handleOnCancel}
             onConfirm={this.handleBookMatch}
-            confirmText='Book'
+            confirmText={this.context.token ? "Book" : "Confirm"}
           >
             <h1>{this.state.selectedMatch.title}</h1>
             <h2>
