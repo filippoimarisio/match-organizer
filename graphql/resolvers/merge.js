@@ -1,6 +1,15 @@
+const DataLoader = require('dataloader');
 const Match = require('../../models/match');
 const User = require('../../models/user');
 const { dateToString } = require('../../helpers/date');
+
+const matchLoader = new DataLoader((matchIds) => {
+  return matches(matchIds);
+});
+
+const userLoader= new DataLoader((userIds) => {
+  return User.find({_id: {$in: userIds}});
+})
 
 const matches = async matchIds => {
   try {
@@ -16,8 +25,8 @@ const matches = async matchIds => {
 
 const singleMatch = async matchId => {
   try {
-    const match = await Match.findById(matchId);
-    return transformMatch(match);
+    const match = await matchLoader.load(matchId.toString());
+    return match;
   }
   catch (err) {
     throw err
@@ -26,11 +35,11 @@ const singleMatch = async matchId => {
 
 const user = async userId => {
   try {
-    const user = await User.findById(userId);
+    const user = await userLoader.load(userId.toString());
     return {
       ...user._doc,
       _id: user.id,
-      createdMatches: matches.bind(this, user._doc.createdMatches)
+      createdMatches: matchLoader.load.bind(this, user._doc.createdMatches)
     };
   } catch (err) {
     throw err;
