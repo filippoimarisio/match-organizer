@@ -39,7 +39,7 @@ const user = async userId => {
     return {
       ...user._doc,
       _id: user.id,
-      createdMatches: matchLoader.load.bind(this, user._doc.createdMatches)
+      createdMatches: () => matchLoader.loadMany(user._doc.createdMatches)
     };
   } catch (err) {
     throw err;

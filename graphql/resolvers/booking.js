@@ -29,15 +29,12 @@ module.exports = {
     return transformBooking(result);
   },
   cancelBooking: async (args, req) => {
-    console.log('AAARGS', args);
     if (!req.isAuth) {
       throw new Error('You must be logged in to cancel a booking');
     }
     try {
       const booking = await Booking.findById({_id: args.bookingId}).populate('match');
-      console.log('BOOKING', booking);
       const match = transformMatch(booking.match);
-      console.log('MATCH', match);
 
       await Booking.deleteOne({_id: args.bookingId})
       return match;

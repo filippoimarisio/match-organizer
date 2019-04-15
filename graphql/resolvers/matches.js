@@ -18,7 +18,6 @@ module.exports = {
     if (!req.isAuth) {
       throw new Error('You must be logged in to create a match');
     }
-    console.log('richiesta', req)
     const match = new Match({
       title: args.matchInput.title,
       description: args.matchInput.description,

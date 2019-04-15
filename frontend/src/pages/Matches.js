@@ -56,8 +56,8 @@ class MatchesPage extends Component {
 
     const requestBody = {
       query: `
-          mutation {
-            createMatch(matchInput: {title: "${title}", description: "${description}", price: ${price}, date: "${date}"}) {
+          mutation CreateMatch($title: String!, $description: String!, $price: Float!, $date: String!){
+            createMatch(matchInput: {title: $title, description: $description, price: $price, date: $date}) {
               _id
               title
               description
@@ -69,7 +69,13 @@ class MatchesPage extends Component {
               }
             }
           }
-        `
+        `,
+        variables: {
+          title: title,
+          description: description,
+          price: price,
+          date: date
+        }
     };
 
     const token = this.context.token;
@@ -91,7 +97,6 @@ class MatchesPage extends Component {
       .then(resData => {
         this.setState(prevState => {
           const updatedMatches = [...prevState.matches];
-          console.log("resdata", resData);
           updatedMatches.push({
             _id: resData.data.createMatch._id,
             title: resData.data.createMatch.title,
@@ -175,14 +180,17 @@ class MatchesPage extends Component {
     }
     const requestBody = {
       query: `
-          mutation {
-            bookMatch(matchId: "${this.state.selectedMatch._id}") {
+          mutation BookMatch($id: ID!) {
+            bookMatch(matchId: $id) {
               _id
               createdAt
               updatedAt
             }
           }
-        `
+        `,
+      variables: {
+        id: this.state.selectedMatch._id
+      }
     };
 
     fetch("http://localhost:8000/graphql", {
